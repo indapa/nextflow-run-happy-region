@@ -17,9 +17,7 @@ workflow {
             file(row.truth_index), 
             file(row.query_vcf), 
             file(row.query_index), 
-            file(row.region_bed),      // Passed as truth_bed
-            file(row.ref), 
-            file(row.ref_index),
+            
             
         )
     }

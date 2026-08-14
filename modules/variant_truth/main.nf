@@ -10,7 +10,10 @@ process RUN_HAPPY_REGION {
     memory { 16.GB * task.attempt }
 
     input:
-    tuple val(sample_id), path(truth_vcf), path(truth_index), path(query_vcf), path(query_index),path(region_bed), path(ref), path(ref_index)
+    tuple val(sample_id), path(truth_vcf), path(truth_index), path(query_vcf), path(query_index)
+    path(region_bed)
+    path(ref)
+    path(ref_index)
 
     output:
     tuple val(sample_id), path("*.summary.csv"), emit: summary
