@@ -1,0 +1,16 @@
+flowchart TB
+    subgraph inputs ["Inputs (params)"]
+    v0["--input<br/>samplesheet CSV → Channel&lt;HappySample&gt;"]
+    v1["--region_bed"]
+    v2["--ref"]
+    v3["--ref_index"]
+    end
+    v4(["RUN_HAPPY_REGION<br/>hap.py + vcfeval"])
+    subgraph outputs ["Published (output block)"]
+    v5["happy<br/>outdir/&lt;sample_id&gt;/"]
+    end
+    v0 --> v4
+    v1 --> v4
+    v2 --> v4
+    v3 --> v4
+    v4 --> v5

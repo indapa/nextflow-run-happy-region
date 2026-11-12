@@ -1,34 +1,39 @@
-#!/usr/local/bin/nextflow
+#!/usr/bin/env nextflow
 
-include {RUN_HAPPY_REGION} from './modules/variant_truth/'
+nextflow.enable.types = true
 
+include { RUN_HAPPY_REGION } from './modules/variant_truth'
 
-
-   
+params {
+    // CSV samplesheet: sample_id,truth_vcf,truth_index,query_vcf,query_index
+    input: Channel<HappySample>
+    // BED file restricting the comparison regions
+    region_bed: Path
+    // Reference FASTA and its .fai index
+    ref: Path = 's3://ngi-igenomes/igenomes/Homo_sapiens/GATK/GRCh38/Sequence/WholeGenomeFasta/Homo_sapiens_assembly38.fasta'
+    ref_index: Path = 's3://ngi-igenomes/igenomes/Homo_sapiens/GATK/GRCh38/Sequence/WholeGenomeFasta/Homo_sapiens_assembly38.fasta.fai'
+    // Output directory (mapped to outputDir in nextflow.config)
+    outdir: String = 'results'
+}
 
 workflow {
-    ch_samples = channel.fromPath(params.input, checkIfExists: true)
-        .splitCsv(header: true)
+    main:
+    ch_happy = RUN_HAPPY_REGION(params.input, params.region_bed, params.ref, params.ref_index)
 
-    happy_prs_ch = ch_samples.map { row ->
-        tuple(
-            row.sample_id, 
-            file(row.truth_vcf), 
-            file(row.truth_index), 
-            file(row.query_vcf), 
-            file(row.query_index), 
-            
-            
-        )
+    publish:
+    happy = ch_happy
+}
+
+output {
+    happy: Channel<Record> {
+        path { r -> r.sample_id }
     }
+}
 
-    // Convert file path parameters to file objects (Value Channel behavior)
-    ch_bed = file(params.region_bed, checkIfExists: true)
-    ch_ref = file(params.ref, checkIfExists: true)
-    ch_fai = file(params.ref_index, checkIfExists: true)
-    //happy_prs_ch.view()
-    RUN_HAPPY_REGION(happy_prs_ch, ch_bed, ch_ref, ch_fai)
-    
-    
- 
+record HappySample {
+    sample_id: String
+    truth_vcf: Path
+    truth_index: Path
+    query_vcf: Path
+    query_index: Path
 }
