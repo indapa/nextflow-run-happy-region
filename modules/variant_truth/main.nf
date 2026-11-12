@@ -1,34 +1,40 @@
+nextflow.enable.types = true
+
 process RUN_HAPPY_REGION {
-    tag "${sample_id}"
-    publishDir { "${params.outdir}/${sample_id}" }, mode: 'copy', overwrite: true
+    tag sample_id
     container 'jmcdani20/hap.py:v0.3.12'
 
     errorStrategy 'retry'
     maxRetries 2
     // Give larger chromosomes more juice on retries if they time out
-    cpus { 4 * task.attempt }
-    memory { 16.GB * task.attempt }
+    cpus 4 * task.attempt
+    memory 16.GB * task.attempt
 
     input:
-    tuple val(sample_id), path(truth_vcf), path(truth_index), path(query_vcf), path(query_index)
-    path(region_bed)
-    path(ref)
-    path(ref_index)
+    record(
+        sample_id: String,
+        truth_vcf: Path,
+        truth_index: Path,
+        query_vcf: Path,
+        query_index: Path
+    )
+    region_bed: Path
+    ref: Path
+    ref_index: Path
 
     output:
-    tuple val(sample_id), path("*.summary.csv"), emit: summary
-    tuple val(sample_id), path("*.extended.csv"), emit: extended
-    tuple val(sample_id), path("*.roc.*"), emit: rocs
-    tuple val(sample_id), path("*.vcf.gz"), emit: vcf
-    tuple val(sample_id),  path("*.vcf.gz.tbi"), emit: vcf_index
+    record(
+        sample_id: sample_id,
+        summary: file("${sample_id}.happy.output.summary.csv"),
+        extended: file("${sample_id}.happy.output.extended.csv"),
+        rocs: files("${sample_id}.happy.output.roc.*", optional: true),
+        vcf: file("${sample_id}.happy.output.vcf.gz"),
+        vcf_index: file("${sample_id}.happy.output.vcf.gz.tbi")
+    )
 
     script:
     def prefix = "${sample_id}.happy.output"
     """
-
-
-    
-
     /opt/hap.py/bin/hap.py \\
         ${truth_vcf} \\
         ${query_vcf} \\
@@ -51,4 +57,3 @@ process RUN_HAPPY_REGION {
     touch ${prefix}.vcf.gz.tbi
     """
 }
-
