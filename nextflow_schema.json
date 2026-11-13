@@ -1,8 +1,8 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": "https://raw.githubusercontent.com///nextflow_schema.json",
-    "title": " pipeline parameters",
-    "description": "",
+    "$id": "https://raw.githubusercontent.com/indapa/nextflow-run-happy-region/master/nextflow_schema.json",
+    "title": "nextflow-run-happy-region pipeline parameters",
+    "description": "Benchmark query VCFs against truth VCFs with hap.py over a set of regions, and optionally ask an LLM agent to explain false negatives.",
     "type": "object",
     "$defs": {
         "input_output_options": {
@@ -10,10 +10,7 @@
             "type": "object",
             "fa_icon": "fas fa-terminal",
             "description": "Define where the pipeline should find input data and save output data.",
-            "required": [
-                "input",
-                "outdir"
-            ],
+            "required": ["input", "region_bed"],
             "properties": {
                 "input": {
                     "type": "string",
@@ -22,35 +19,86 @@
                     "schema": "assets/schema_input.json",
                     "mimetype": "text/csv",
                     "pattern": "^\\S+\\.csv$",
-                    "description": "Path to comma-separated file containing information about the samples in the experiment.",
-                    "help_text": "You will need to create a design file with information about the samples in your experiment before running the pipeline. Use this parameter to specify its location. It has to be a comma-separated file with 3 columns, and a header row.",
+                    "description": "Path to comma-separated samplesheet describing the truth and query VCFs for each sample.",
+                    "help_text": "CSV with a header row and columns: sample_id, truth_vcf, truth_index, query_vcf, query_index, and optionally query_bam, query_bam_index. The BAM columns are only needed with --explain_fn; samples without them are skipped by the false-negative explanation step. Paths may be local or s3://.",
                     "fa_icon": "fas fa-file-csv"
+                },
+                "region_bed": {
+                    "type": "string",
+                    "format": "file-path",
+                    "exists": true,
+                    "pattern": "^\\S+\\.bed(\\.gz)?$",
+                    "description": "BED file restricting the regions compared by hap.py.",
+                    "fa_icon": "fas fa-map-marked-alt"
                 },
                 "outdir": {
                     "type": "string",
                     "format": "directory-path",
-                    "description": "The output directory where the results will be saved. You have to use absolute paths to storage on Cloud infrastructure.",
+                    "default": "results",
+                    "description": "The output directory where the results will be saved. Use an absolute path (e.g. s3://...) when running on cloud infrastructure.",
                     "fa_icon": "fas fa-folder-open"
+                }
+            }
+        },
+        "reference_options": {
+            "title": "Reference genome options",
+            "type": "object",
+            "fa_icon": "fas fa-dna",
+            "description": "Reference FASTA used by hap.py and for gathering false-negative evidence.",
+            "properties": {
+                "ref": {
+                    "type": "string",
+                    "format": "file-path",
+                    "exists": true,
+                    "pattern": "^\\S+\\.fn?a(sta)?$",
+                    "default": "s3://ngi-igenomes/igenomes/Homo_sapiens/GATK/GRCh38/Sequence/WholeGenomeFasta/Homo_sapiens_assembly38.fasta",
+                    "description": "Reference genome FASTA. Must match the build of the truth and query VCFs.",
+                    "fa_icon": "fas fa-book"
+                },
+                "ref_index": {
+                    "type": "string",
+                    "format": "file-path",
+                    "exists": true,
+                    "pattern": "^\\S+\\.fai$",
+                    "default": "s3://ngi-igenomes/igenomes/Homo_sapiens/GATK/GRCh38/Sequence/WholeGenomeFasta/Homo_sapiens_assembly38.fasta.fai",
+                    "description": "samtools faidx index (.fai) for the reference FASTA.",
+                    "fa_icon": "fas fa-book"
+                }
+            }
+        },
+        "fn_explain_options": {
+            "title": "False-negative explanation options",
+            "type": "object",
+            "fa_icon": "fas fa-robot",
+            "description": "Optional LLM agent step that explains why variants were missed.",
+            "properties": {
+                "explain_fn": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Ask an LLM agent (Claude Sonnet 4.6) to explain false negatives.",
+                    "help_text": "Requires query_bam and query_bam_index columns in the samplesheet, and ANTHROPIC_API_KEY set in the launch environment (on Seqera Platform, store it as a secret).",
+                    "fa_icon": "fas fa-comment-medical"
+                },
+                "max_fn": {
+                    "type": "integer",
+                    "default": 50,
+                    "minimum": 1,
+                    "description": "Maximum number of false negatives explained per sample (one LLM call each).",
+                    "fa_icon": "fas fa-sort-numeric-up"
+                },
+                "fn_window": {
+                    "type": "integer",
+                    "default": 50,
+                    "minimum": 0,
+                    "description": "Bases of context gathered either side of each false negative.",
+                    "fa_icon": "fas fa-arrows-alt-h"
                 }
             }
         }
     },
     "allOf": [
-        {
-            "$ref": "#/$defs/input_output_options"
-        }
-    ],
-    "properties": {
-        "ref": {
-            "type": "string",
-            "default": "s3://ngi-igenomes/igenomes/Homo_sapiens/GATK/GRCh38/Sequence/WholeGenomeFasta/Homo_sapiens_assembly38.fasta"
-        },
-        "ref_index": {
-            "type": "string",
-            "default": "s3://ngi-igenomes/igenomes/Homo_sapiens/GATK/GRCh38/Sequence/WholeGenomeFasta/Homo_sapiens_assembly38.fasta.fai"
-        },
-        "region_bed": {
-            "type": "string"
-        }
-    }
+        { "$ref": "#/$defs/input_output_options" },
+        { "$ref": "#/$defs/reference_options" },
+        { "$ref": "#/$defs/fn_explain_options" }
+    ]
 }
