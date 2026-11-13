@@ -1,0 +1,63 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://raw.githubusercontent.com/indapa/nextflow-run-happy-region/master/assets/schema_input.json",
+    "title": "nextflow-run-happy-region samplesheet",
+    "description": "Schema for the samplesheet passed with --input",
+    "type": "array",
+    "items": {
+        "type": "object",
+        "properties": {
+            "sample_id": {
+                "type": "string",
+                "pattern": "^\\S+$",
+                "errorMessage": "sample_id must be provided and cannot contain spaces"
+            },
+            "truth_vcf": {
+                "type": "string",
+                "format": "file-path",
+                "exists": true,
+                "pattern": "^\\S+\\.vcf\\.gz$",
+                "errorMessage": "truth_vcf must be a bgzipped VCF ending in .vcf.gz"
+            },
+            "truth_index": {
+                "type": "string",
+                "format": "file-path",
+                "exists": true,
+                "pattern": "^\\S+\\.vcf\\.gz\\.(tbi|csi)$",
+                "errorMessage": "truth_index must be a .tbi or .csi index"
+            },
+            "query_vcf": {
+                "type": "string",
+                "format": "file-path",
+                "exists": true,
+                "pattern": "^\\S+\\.vcf\\.gz$",
+                "errorMessage": "query_vcf must be a bgzipped VCF ending in .vcf.gz"
+            },
+            "query_index": {
+                "type": "string",
+                "format": "file-path",
+                "exists": true,
+                "pattern": "^\\S+\\.vcf\\.gz\\.(tbi|csi)$",
+                "errorMessage": "query_index must be a .tbi or .csi index"
+            },
+            "query_bam": {
+                "type": "string",
+                "format": "file-path",
+                "exists": true,
+                "pattern": "^\\S+\\.(bam|cram)$",
+                "errorMessage": "query_bam must end in .bam or .cram"
+            },
+            "query_bam_index": {
+                "type": "string",
+                "format": "file-path",
+                "exists": true,
+                "pattern": "^\\S+\\.(bai|crai|csi)$",
+                "errorMessage": "query_bam_index must end in .bai, .crai or .csi"
+            }
+        },
+        "required": ["sample_id", "truth_vcf", "truth_index", "query_vcf", "query_index"],
+        "dependentRequired": {
+            "query_bam": ["query_bam_index"]
+        }
+    }
+}
