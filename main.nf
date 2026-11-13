@@ -10,6 +10,8 @@ params {
     input: Channel<HappySample>
     // BED file restricting the comparison regions
     region_bed: Path
+    // Restrict hap.py to the BED regions with -R (false: compare genome-wide, BED only as confident regions)
+    restrict_regions: Boolean = true
     // Reference FASTA and its .fai index
     ref: Path = 's3://ngi-igenomes/igenomes/Homo_sapiens/GATK/GRCh38/Sequence/WholeGenomeFasta/Homo_sapiens_assembly38.fasta'
     ref_index: Path = 's3://ngi-igenomes/igenomes/Homo_sapiens/GATK/GRCh38/Sequence/WholeGenomeFasta/Homo_sapiens_assembly38.fasta.fai'
@@ -25,7 +27,7 @@ params {
 
 workflow {
     main:
-    ch_happy = RUN_HAPPY_REGION(params.input, params.region_bed, params.ref, params.ref_index)
+    ch_happy = RUN_HAPPY_REGION(params.input, params.region_bed, params.ref, params.ref_index, params.restrict_regions)
 
     ch_explained = channel.empty()
     if (params.explain_fn) {
@@ -39,6 +41,9 @@ workflow {
 
         // one record per false negative; line 2 of each evidence file is CHROM:POS:REF:ALT
         ch_fn = ch_evidence.flatMap { r ->
+            // evidence is empty when hap.py found no FNs; collect then emits nothing
+            if (r.evidence.isEmpty())
+                log.info "[${r.sample_id}] hap.py found no false negatives in the BED regions; nothing for EXPLAIN_FN to explain"
             r.evidence.collect { f ->
                 record(sample_id: r.sample_id, variant: f.readLines()[1], evidence: f.text)
             }

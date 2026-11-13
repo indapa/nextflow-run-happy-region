@@ -59,6 +59,7 @@ from Nextflow, run the pipeline with `-preview -with-dag dag.mmd`.
 |----------------|-------------------------|-----------------------------|-------------|
 | `--input`      | `Channel<HappySample>`  | required                    | CSV samplesheet (see below) |
 | `--region_bed` | `Path`                  | required                    | BED file of regions to compare |
+| `--restrict_regions` | `Boolean`         | `true`                      | Restrict hap.py to the BED regions with `-R` (see [Region restriction](#region-restriction)) |
 | `--ref`        | `Path`                  | GRCh38 FASTA (ngi-igenomes) | Reference FASTA |
 | `--ref_index`  | `Path`                  | GRCh38 `.fai` (ngi-igenomes)| Reference FASTA index |
 | `--outdir`     | `String`                | `results`                   | Output directory (sets `outputDir`) |
@@ -102,6 +103,30 @@ Run locally with Docker and without Wave and Fusion:
 
 ```bash
 nextflow run main.nf -profile local --input samplesheet.csv --region_bed regions.bed
+```
+
+### Region restriction
+
+By default (`--restrict_regions true`) hap.py runs with both `-R` and `-f` set
+to `--region_bed`:
+
+- `-R` restricts the truth and query VCFs to the BED regions before
+  comparison, so hap.py only reads, compares and writes records inside them.
+- `-f` marks the BED as the confident regions.
+
+With `--restrict_regions false`, only `-f` is used. hap.py then compares the
+whole genome and labels every query call outside the BED as `UNK`. The
+summary's `QUERY.TOTAL` and `QUERY.UNK` count the whole genome, and the output
+VCF covers the whole genome too.
+
+TP, FN and FP counts inside the regions are normally the same either way.
+Variants at the edge of a region can differ slightly, because context just
+outside the BED is dropped. For a small BED, such as a set of PRS sites, the
+restricted run is much faster and its output VCF is much smaller.
+
+```bash
+# previous behaviour: genome-wide comparison, BED as confident regions only
+nextflow run main.nf --input samplesheet.csv --region_bed regions.bed --restrict_regions false
 ```
 
 Run a quick stub test, which creates empty output files without running hap.py:
@@ -189,6 +214,11 @@ Requirements and limits:
   container, so Docker is required. The `langchain4j` runner does not support
   Anthropic models.
 - Samples without `query_bam` and `query_bam_index` are skipped.
+- If hap.py finds no false negatives for a sample, `EXPLAIN_FN` does not run
+  for it and the run log shows
+  `[<sample_id>] hap.py found no false negatives in the BED regions; nothing for EXPLAIN_FN to explain`.
+  If no sample has any, `fn_explanations.csv` is empty. That is a valid
+  result, not a failure.
 - Each sample's BAM is a task input. With Fusion only the queried regions are
   read; without it the whole BAM is downloaded.
 - `EXTRACT_FN_EVIDENCE` gets bcftools and samtools from a `conda` directive that

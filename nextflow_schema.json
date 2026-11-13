@@ -31,6 +31,13 @@
                     "description": "BED file restricting the regions compared by hap.py.",
                     "fa_icon": "fas fa-map-marked-alt"
                 },
+                "restrict_regions": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Restrict the hap.py comparison to the BED regions (hap.py -R).",
+                    "help_text": "When true, hap.py is run with -R and -f set to region_bed, so only records inside the regions are read, compared and written. When false, only -f is used: hap.py compares the whole genome and labels query calls outside the BED as UNK. Counts inside the regions are normally the same either way (variants at region edges can differ slightly, because nearby context outside the BED is dropped); true is much faster and gives a much smaller output VCF.",
+                    "fa_icon": "fas fa-crop-alt"
+                },
                 "outdir": {
                     "type": "string",
                     "format": "directory-path",
