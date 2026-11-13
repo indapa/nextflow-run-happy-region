@@ -2,15 +2,27 @@ flowchart TB
     subgraph inputs ["Inputs (params)"]
     v0["--input<br/>samplesheet CSV → Channel&lt;HappySample&gt;"]
     v1["--region_bed"]
-    v2["--ref"]
-    v3["--ref_index"]
+    v2["--ref / --ref_index"]
     end
     v4(["RUN_HAPPY_REGION<br/>hap.py + vcfeval"])
+    subgraph explain ["Only with --explain_fn"]
+    v6["join on sample_id<br/>hap.py VCF + query VCF + query BAM"]
+    v7(["EXTRACT_FN_EVIDENCE<br/>bcftools + samtools"])
+    v8["flatMap<br/>one record per false negative"]
+    v9{{"EXPLAIN_FN (agent)<br/>claude-sonnet-4-6"}}
+    end
     subgraph outputs ["Published (output block)"]
     v5["happy<br/>outdir/&lt;sample_id&gt;/"]
+    v10["fn_explanations<br/>outdir/fn_explanations.csv"]
     end
     v0 --> v4
     v1 --> v4
     v2 --> v4
-    v3 --> v4
     v4 --> v5
+    v4 --> v6
+    v0 --> v6
+    v6 --> v7
+    v2 --> v7
+    v7 --> v8
+    v8 --> v9
+    v9 --> v10

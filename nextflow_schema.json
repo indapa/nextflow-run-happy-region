@@ -51,6 +51,21 @@
         },
         "region_bed": {
             "type": "string"
+        },
+        "explain_fn": {
+            "type": "boolean",
+            "default": false,
+            "description": "Ask an LLM agent (Claude Sonnet 4.6) to explain false negatives. Needs query_bam columns in the samplesheet and ANTHROPIC_API_KEY."
+        },
+        "max_fn": {
+            "type": "integer",
+            "default": 50,
+            "description": "Maximum number of false negatives explained per sample (one LLM call each)."
+        },
+        "fn_window": {
+            "type": "integer",
+            "default": 50,
+            "description": "Bases of context gathered either side of each false negative."
         }
     }
 }
