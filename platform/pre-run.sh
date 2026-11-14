@@ -10,6 +10,9 @@
 
 # Nextflow version required by manifest.nextflowVersion
 export NXF_VER=26.10.6
+# The pipeline uses static typing (typed params, records, agents), which only the
+# v2 (strict) syntax parser understands. Force it in case the environment sets v1.
+export NXF_SYNTAX_PARSER=v2
 
 # Anthropic API key for the EXPLAIN_FN / EXPLAIN_FP agents (--explain_fn, --explain_fp)
 export ANTHROPIC_API_KEY=$(aws secretsmanager get-secret-value \

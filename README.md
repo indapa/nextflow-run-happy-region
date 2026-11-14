@@ -310,6 +310,9 @@ and `fp_explanations.csv` may be empty.
 [platform/pre-run.sh](platform/pre-run.sh) is the head job's pre-run script. It
 does two things:
 - pins `NXF_VER` to the version that `manifest.nextflowVersion` requires
+- sets `NXF_SYNTAX_PARSER=v2`, because the pipeline's static typing (typed
+  params, records, agents) only compiles with the v2 parser. With `v1`, the run
+  fails with `Unexpected input: '{'` at `record HappySample {`.
 - reads `ANTHROPIC_API_KEY` for the agent steps from AWS Secrets Manager (secret
   `anthropic-api-key` in `us-west-1`), and stops the launch if it can't
 
