@@ -31,6 +31,13 @@
                     "description": "BED file restricting the regions compared by hap.py.",
                     "fa_icon": "fas fa-map-marked-alt"
                 },
+                "restrict_regions": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Restrict the hap.py comparison to the BED regions (hap.py -R).",
+                    "help_text": "When true, hap.py is run with -R and -f set to region_bed, so only records inside the regions are read, compared and written. When false, only -f is used: hap.py compares the whole genome and labels query calls outside the BED as UNK. Counts inside the regions are normally the same either way (variants at region edges can differ slightly, because nearby context outside the BED is dropped); true is much faster and gives a much smaller output VCF.",
+                    "fa_icon": "fas fa-crop-alt"
+                },
                 "outdir": {
                     "type": "string",
                     "format": "directory-path",
@@ -94,11 +101,41 @@
                     "fa_icon": "fas fa-arrows-alt-h"
                 }
             }
+        },
+        "fp_explain_options": {
+            "title": "False-positive explanation options",
+            "type": "object",
+            "fa_icon": "fas fa-robot",
+            "description": "Optional LLM agent step that explains why query calls did not match the truth set.",
+            "properties": {
+                "explain_fp": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Ask an LLM agent (Claude Sonnet 4.6) to explain false positives.",
+                    "help_text": "Requires query_bam and query_bam_index columns in the samplesheet, and ANTHROPIC_API_KEY set in the launch environment (on Seqera Platform, store it as a secret). Can be combined with --explain_fn.",
+                    "fa_icon": "fas fa-comment-medical"
+                },
+                "max_fp": {
+                    "type": "integer",
+                    "default": 50,
+                    "minimum": 1,
+                    "description": "Maximum number of false positives explained per sample (one LLM call each).",
+                    "fa_icon": "fas fa-sort-numeric-up"
+                },
+                "fp_window": {
+                    "type": "integer",
+                    "default": 50,
+                    "minimum": 0,
+                    "description": "Bases of context gathered either side of each false positive.",
+                    "fa_icon": "fas fa-arrows-alt-h"
+                }
+            }
         }
     },
     "allOf": [
         { "$ref": "#/$defs/input_output_options" },
         { "$ref": "#/$defs/reference_options" },
-        { "$ref": "#/$defs/fn_explain_options" }
+        { "$ref": "#/$defs/fn_explain_options" },
+        { "$ref": "#/$defs/fp_explain_options" }
     ]
 }

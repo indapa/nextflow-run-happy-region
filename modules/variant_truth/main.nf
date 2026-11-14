@@ -21,6 +21,7 @@ process RUN_HAPPY_REGION {
     region_bed: Path
     ref: Path
     ref_index: Path
+    restrict_regions: Boolean
 
     output:
     record(
@@ -34,11 +35,15 @@ process RUN_HAPPY_REGION {
 
     script:
     def prefix = "${sample_id}.happy.output"
+    // -f marks the BED as the confident regions; calls outside it are scored UNK.
+    // -R also restricts both VCFs to the BED before comparison, so hap.py only
+    // reads and writes records inside the regions (much faster for small BEDs).
+    def region_args = restrict_regions ? "-R ${region_bed} -f ${region_bed}" : "-f ${region_bed}"
     """
     /opt/hap.py/bin/hap.py \\
         ${truth_vcf} \\
         ${query_vcf} \\
-        -f ${region_bed} \\
+        ${region_args} \\
         -r ${ref} \\
         -o ${prefix} \\
         --engine=vcfeval \\
