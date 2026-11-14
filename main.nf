@@ -11,7 +11,7 @@ params {
     input: Channel<HappySample>
     // BED file restricting the comparison regions
     region_bed: Path
-    // Restrict hap.py to the BED regions with -R (false: compare genome-wide, BED only as confident regions)
+    // Restrict hap.py to the BED regions with -T (false: compare genome-wide, BED only as confident regions)
     restrict_regions: Boolean = true
     // Reference FASTA and its .fai index
     ref: Path = 's3://ngi-igenomes/igenomes/Homo_sapiens/GATK/GRCh38/Sequence/WholeGenomeFasta/Homo_sapiens_assembly38.fasta'

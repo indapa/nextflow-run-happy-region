@@ -72,7 +72,7 @@ from Nextflow, run the pipeline with `-preview -with-dag dag.mmd`.
 |----------------|-------------------------|-----------------------------|-------------|
 | `--input`      | `Channel<HappySample>`  | required                    | CSV samplesheet (see below) |
 | `--region_bed` | `Path`                  | required                    | BED file of regions to compare |
-| `--restrict_regions` | `Boolean`         | `true`                      | Restrict hap.py to the BED regions with `-R` (see [Region restriction](#region-restriction)) |
+| `--restrict_regions` | `Boolean`         | `true`                      | Restrict hap.py to the BED regions with `-T` (see [Region restriction](#region-restriction)) |
 | `--ref`        | `Path`                  | GRCh38 FASTA (ngi-igenomes) | Reference FASTA |
 | `--ref_index`  | `Path`                  | GRCh38 `.fai` (ngi-igenomes)| Reference FASTA index |
 | `--outdir`     | `String`                | `results`                   | Output directory (sets `outputDir`) |
@@ -123,12 +123,20 @@ nextflow run main.nf -profile local --input samplesheet.csv --region_bed regions
 
 ### Region restriction
 
-By default (`--restrict_regions true`) hap.py runs with both `-R` and `-f` set
+By default (`--restrict_regions true`) hap.py runs with both `-T` and `-f` set
 to `--region_bed`:
 
-- `-R` restricts the truth and query VCFs to the BED regions before
-  comparison, so hap.py only reads, compares and writes records inside them.
+- `-T` (`--target-regions`) restricts the truth and query VCFs to the BED
+  regions before comparison, so hap.py only compares and writes records inside
+  them.
 - `-f` marks the BED as the confident regions.
+
+Why `-T` and not `-R` (`--restrict-regions`): in hap.py 0.3.12, the version in
+the pipeline's container, `-R` is broken. hap.py builds its second bcftools
+command without the `bcftools` binary, and the task fails with
+`/bin/sh: 1: view: not found`. The bug is fixed upstream in 0.3.15. In either
+version, hap.py's `-R` path streams the whole VCF to a temporary file before
+applying the regions, so `-T` is no slower.
 
 With `--restrict_regions false`, only `-f` is used. hap.py then compares the
 whole genome and labels every query call outside the BED as `UNK`. The
@@ -138,7 +146,10 @@ VCF covers the whole genome too.
 TP, FN and FP counts inside the regions are normally the same either way.
 Variants at the edge of a region can differ slightly, because context just
 outside the BED is dropped. For a small BED, such as a set of PRS sites, the
-restricted run is much faster and its output VCF is much smaller.
+restricted run is much faster and its output VCF is much smaller. For example,
+on HG002 chr2 with 5 PRS sites, both modes gave 3 TP, 0 FN and 0 FP. The
+restricted run took 24 s against 66 s for the genome-wide run, which counted
+373k query calls as `UNK`.
 
 ```bash
 # previous behaviour: genome-wide comparison, BED as confident regions only
