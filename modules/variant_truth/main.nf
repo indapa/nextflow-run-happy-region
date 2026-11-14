@@ -36,9 +36,12 @@ process RUN_HAPPY_REGION {
     script:
     def prefix = "${sample_id}.happy.output"
     // -f marks the BED as the confident regions; calls outside it are scored UNK.
-    // -R also restricts both VCFs to the BED before comparison, so hap.py only
-    // reads and writes records inside the regions (much faster for small BEDs).
-    def region_args = restrict_regions ? "-R ${region_bed} -f ${region_bed}" : "-f ${region_bed}"
+    // -T also restricts both VCFs to the BED before comparison (bcftools view -T),
+    // so hap.py only compares and writes records inside the regions.
+    // Not -R: hap.py 0.3.12 builds its -R command without the bcftools binary and
+    // fails with "/bin/sh: view: not found" (fixed upstream in 0.3.15). In hap.py,
+    // -R streams the whole VCF to a temp file first anyway, so -T is no slower.
+    def region_args = restrict_regions ? "-T ${region_bed} -f ${region_bed}" : "-f ${region_bed}"
     """
     /opt/hap.py/bin/hap.py \\
         ${truth_vcf} \\
