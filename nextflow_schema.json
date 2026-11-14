@@ -101,11 +101,41 @@
                     "fa_icon": "fas fa-arrows-alt-h"
                 }
             }
+        },
+        "fp_explain_options": {
+            "title": "False-positive explanation options",
+            "type": "object",
+            "fa_icon": "fas fa-robot",
+            "description": "Optional LLM agent step that explains why query calls did not match the truth set.",
+            "properties": {
+                "explain_fp": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Ask an LLM agent (Claude Sonnet 4.6) to explain false positives.",
+                    "help_text": "Requires query_bam and query_bam_index columns in the samplesheet, and ANTHROPIC_API_KEY set in the launch environment (on Seqera Platform, store it as a secret). Can be combined with --explain_fn.",
+                    "fa_icon": "fas fa-comment-medical"
+                },
+                "max_fp": {
+                    "type": "integer",
+                    "default": 50,
+                    "minimum": 1,
+                    "description": "Maximum number of false positives explained per sample (one LLM call each).",
+                    "fa_icon": "fas fa-sort-numeric-up"
+                },
+                "fp_window": {
+                    "type": "integer",
+                    "default": 50,
+                    "minimum": 0,
+                    "description": "Bases of context gathered either side of each false positive.",
+                    "fa_icon": "fas fa-arrows-alt-h"
+                }
+            }
         }
     },
     "allOf": [
         { "$ref": "#/$defs/input_output_options" },
         { "$ref": "#/$defs/reference_options" },
-        { "$ref": "#/$defs/fn_explain_options" }
+        { "$ref": "#/$defs/fn_explain_options" },
+        { "$ref": "#/$defs/fp_explain_options" }
     ]
 }
