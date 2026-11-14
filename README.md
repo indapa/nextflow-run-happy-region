@@ -226,6 +226,7 @@ Results are written to `<outdir>/fn_explanations.csv`, one row per false negativ
 Requirements and limits:
 
 - `ANTHROPIC_API_KEY` must be exported in the shell that launches Nextflow.
+  On Seqera Platform, see [Running on Seqera Platform](#running-on-seqera-platform).
 - The agent uses the `pi` runner (`agent.runner = 'pi'`), which runs in a
   container, so Docker is required. The `langchain4j` runner does not support
   Anthropic models.
@@ -303,6 +304,37 @@ The requirements and limits listed for false negatives apply here too: the
 for a sample, `EXPLAIN_FP` does not run for it, the log shows
 `[<sample_id>] hap.py found no false positives in the BED regions; nothing for EXPLAIN_FP to explain`,
 and `fp_explanations.csv` may be empty.
+
+## Running on Seqera Platform
+
+[platform/pre-run.sh](platform/pre-run.sh) is the head job's pre-run script. It
+does two things:
+- pins `NXF_VER` to the version that `manifest.nextflowVersion` requires
+- reads `ANTHROPIC_API_KEY` for the agent steps from AWS Secrets Manager (secret
+  `anthropic-api-key` in `us-west-1`), and stops the launch if it can't
+
+Platform does not read pre-run scripts from the repo, so use the file in one of
+these ways:
+- Paste it into the Launchpad pipeline (**Edit → Advanced options → Pre-run
+  script**). It is saved with the pipeline and runs on every launch.
+- Pass it on each launch with the CLI:
+  `tw launch <repo-url> --pre-run platform/pre-run.sh ...`
+
+If you edit the file, update the Launchpad copy as well.
+
+The head job's IAM role needs read access to the secret. For a Batch Forge
+compute environment, that is the `TowerForge-…-InstanceRole`:
+
+```json
+{
+  "Effect": "Allow",
+  "Action": "secretsmanager:GetSecretValue",
+  "Resource": "arn:aws:secretsmanager:us-west-1:<account-id>:secret:anthropic-api-key-*"
+}
+```
+
+Batch Forge creates a new role when a compute environment is recreated, so add
+this policy again after that.
 
 ## Resources
 
