@@ -321,8 +321,23 @@ and `fp_explanations.csv` may be empty.
 [platform/pre-run.sh](platform/pre-run.sh) is the head job's pre-run script. It
 does two things:
 - pins `NXF_VER` to the version that `manifest.nextflowVersion` requires
+- sets `NXF_ENABLE_SECRETS=false` (see below)
 - reads `ANTHROPIC_API_KEY` for the agent steps from AWS Secrets Manager (secret
   `anthropic-api-key` in `us-west-1`), and stops the launch if it can't
+
+**Do not supply the API key as a Nextflow or Platform secret.** That means no
+`secrets.ANTHROPIC_API_KEY` in the config and no Platform Pipeline Secret.
+
+- Agent tasks run on Nextflow's local `AgentExecutor`, not on AWS Batch.
+- Nextflow asks the secrets provider for every non-Batch task's secrets, even
+  when the task declares none.
+- On AWS Batch that provider is `AwsSecretsProvider`, which only serves Batch
+  jobs, so the agent tasks fail with
+  `AwsSecretsProvider requires the use of the AWS Batch executor`.
+
+`NXF_ENABLE_SECRETS=false` turns secrets off for the run so this cannot happen.
+The `pi` runner reads `ANTHROPIC_API_KEY` from the head job's environment and
+passes it to each agent task itself.
 
 Platform does not read pre-run scripts from the repo, so use the file in one of
 these ways:
