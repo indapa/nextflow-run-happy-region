@@ -6,9 +6,11 @@ process RUN_HAPPY_REGION {
 
     errorStrategy 'retry'
     maxRetries 2
-    // Give larger chromosomes more juice on retries if they time out
+    // Give larger chromosomes more juice on retries if they time out.
+    // Genome-wide comparisons need more than 16 GB (the first attempt was OOM-killed
+    // on a full GIAB HG002 run), so start at 32 GB.
     cpus 4 * task.attempt
-    memory 16.GB * task.attempt
+    memory 32.GB * task.attempt
 
     input:
     record(

@@ -75,7 +75,7 @@ from Nextflow, run the pipeline with `-preview -with-dag dag.mmd`.
 | `--restrict_regions` | `Boolean`         | `true`                      | Restrict hap.py to the BED regions with `-T` (see [Region restriction](#region-restriction)) |
 | `--ref`        | `Path`                  | GRCh38 FASTA (ngi-igenomes) | Reference FASTA |
 | `--ref_index`  | `Path`                  | GRCh38 `.fai` (ngi-igenomes)| Reference FASTA index |
-| `--outdir`     | `String`                | `results`                   | Output directory (sets `outputDir`) |
+| `--outdir`     | `String`                | `results`                   | Output directory (sets `outputDir`). Must be an `s3://` path when the work dir is on S3 |
 | `--explain_fn` | `Boolean`               | `false`                     | Explain false negatives with an LLM agent |
 | `--max_fn`     | `Integer`               | `50`                        | Maximum false negatives explained per sample (one LLM call each) |
 | `--fn_window`  | `Integer`               | `50`                        | Bases of context gathered either side of each false negative |
@@ -328,6 +328,13 @@ does two things:
 - reads `ANTHROPIC_API_KEY` for the agent steps from AWS Secrets Manager (secret
   `anthropic-api-key` in `us-west-1`), and stops the launch if it can't
 
+**Always set `outdir` to an S3 path** in the launch parameters. The default,
+`results`, resolves to `/results` on the head job's local disk, which is
+discarded when the run ends, so a successful run would leave no outputs. The
+pipeline therefore stops at startup when the work dir is remote and `outdir` is
+not a bucket path. If you forgot it on a finished run, relaunch with Resume and
+`outdir` set: every task comes from the cache and only publishing runs.
+
 **Do not supply the API key as a Nextflow or Platform secret.** That means no
 `secrets.ANTHROPIC_API_KEY` in the config and no Platform Pipeline Secret.
 
@@ -401,9 +408,10 @@ agent {
 
 ## Resources
 
-Tasks request 4 CPUs and 16 GB of memory per attempt. On failure they are
-retried up to 2 times, and each retry scales CPUs and memory by
-`task.attempt`. The `local` profile overrides these to 1 CPU and 2 GB.
+Tasks request 4 CPUs and 16 GB of memory per attempt, except
+`RUN_HAPPY_REGION`, which starts at 32 GB because genome-wide comparisons
+exceed 16 GB. On failure tasks are retried up to 2 times, and each retry scales
+CPUs and memory by `task.attempt`. The `local` profile overrides these to 1 CPU and 2 GB.
 
 ## Project layout
 
