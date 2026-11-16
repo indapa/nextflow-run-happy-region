@@ -34,6 +34,12 @@ params {
 
 workflow {
     main:
+    // With a remote work dir (S3 on AWS Batch / Seqera Platform), a local outdir
+    // resolves to the head job's own disk, which is discarded when the run ends:
+    // the run succeeds but every output is lost. Fail at startup instead.
+    if (workflow.workDir.toUriString().contains('://') && !(params.outdir ==~ /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\/.+/))
+        error "--outdir '${params.outdir}' is a local path but the work dir is ${workflow.workDir.toUriString()}. Outputs would be written to the head job's disk and lost. Set --outdir to a bucket path, e.g. s3://<bucket>/<prefix>"
+
     ch_happy = RUN_HAPPY_REGION(params.input, params.region_bed, params.ref, params.ref_index, params.restrict_regions)
 
     // hap.py output + the sample's query VCF and BAM, matched on sample_id.

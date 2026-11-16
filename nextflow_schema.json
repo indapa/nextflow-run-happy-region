@@ -42,7 +42,7 @@
                     "type": "string",
                     "format": "directory-path",
                     "default": "results",
-                    "description": "The output directory where the results will be saved. Use an absolute path (e.g. s3://...) when running on cloud infrastructure.",
+                    "description": "The output directory where the results will be saved. Required to be a bucket path (e.g. s3://...) when the work dir is in the cloud (AWS Batch, Seqera Platform); the run stops at startup otherwise.",
                     "fa_icon": "fas fa-folder-open"
                 }
             }
