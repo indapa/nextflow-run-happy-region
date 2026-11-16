@@ -5,6 +5,7 @@ nextflow.enable.types = true
 include { RUN_HAPPY_REGION } from './modules/variant_truth'
 include { EXTRACT_FN_EVIDENCE ; EXPLAIN_FN ; FnExplanation } from './modules/fn_explain'
 include { EXTRACT_FP_EVIDENCE ; EXPLAIN_FP ; FpExplanation } from './modules/fp_explain'
+include { REPORT_PDF } from './modules/report'
 
 params {
     // CSV samplesheet: sample_id,truth_vcf,truth_index,query_vcf,query_index[,query_bam,query_bam_index]
@@ -82,10 +83,24 @@ workflow {
         ch_fp_explained = EXPLAIN_FP(ch_fp)
     }
 
+    // One PDF with every explanation from both agents.
+    ch_rows = ch_explained
+        .map { r -> explanationJson('FN', r.sample_id, r.variant, r.category, r.explanation, r.evidence, r.confidence) }
+        .mix(ch_fp_explained.map { r -> explanationJson('FP', r.sample_id, r.variant, r.category, r.explanation, r.evidence, r.confidence) })
+        .collect()
+    // no task at all unless an agent step is on
+    ch_report = (params.explain_fn || params.explain_fp) ? REPORT_PDF(ch_rows) : channel.value(null)
+
     publish:
     happy = ch_happy
     fn_explanations = ch_explained
     fp_explanations = ch_fp_explained
+    explanations_report = ch_report
+}
+
+def explanationJson(kind: String, sample_id: String, variant: String, category: String, explanation: String, evidence: String, confidence: Float) -> String {
+    return groovy.json.JsonOutput.toJson([kind: kind, sample_id: sample_id, variant: variant, category: category,
+        explanation: explanation, evidence: evidence, confidence: confidence])
 }
 
 output {
@@ -103,6 +118,8 @@ output {
             path 'fp_explanations.csv'
             header true
         }
+    }
+    explanations_report: Value<Path> {
     }
 }
 

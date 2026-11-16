@@ -16,10 +16,12 @@ flowchart TB
     v12["flatMap<br/>one record per false positive"]
     v13{{"EXPLAIN_FP (agent)<br/>claude-sonnet-4-6"}}
     end
+    v15(["REPORT_PDF<br/>reportlab, with --explain_fn or --explain_fp"])
     subgraph outputs ["Published (output block)"]
     v5["happy<br/>outdir/&lt;sample_id&gt;/"]
     v10["fn_explanations<br/>outdir/fn_explanations.csv"]
     v14["fp_explanations<br/>outdir/fp_explanations.csv"]
+    v16["explanations_report<br/>outdir/explanations.pdf"]
     end
     v0 --> v4
     v1 --> v4
@@ -37,3 +39,6 @@ flowchart TB
     v11 --> v12
     v12 --> v13
     v13 --> v14
+    v9 --> v15
+    v13 --> v15
+    v15 --> v16

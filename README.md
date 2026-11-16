@@ -40,10 +40,12 @@ flowchart TB
     v12["flatMap<br/>one record per false positive"]
     v13{{"EXPLAIN_FP (agent)<br/>claude-sonnet-4-6"}}
     end
+    v15(["REPORT_PDF<br/>reportlab, with --explain_fn or --explain_fp"])
     subgraph outputs ["Published (output block)"]
     v5["happy<br/>outdir/&lt;sample_id&gt;/"]
     v10["fn_explanations<br/>outdir/fn_explanations.csv"]
     v14["fp_explanations<br/>outdir/fp_explanations.csv"]
+    v16["explanations_report<br/>outdir/explanations.pdf"]
     end
     v0 --> v4
     v1 --> v4
@@ -61,6 +63,9 @@ flowchart TB
     v11 --> v12
     v12 --> v13
     v13 --> v14
+    v9 --> v15
+    v13 --> v15
+    v15 --> v16
 ```
 
 The DAG source is in [docs/dag.mmd](docs/dag.mmd). To regenerate the raw DAG
@@ -319,6 +324,27 @@ for a sample, `EXPLAIN_FP` does not run for it, the log shows
 `[<sample_id>] hap.py found no false positives in the BED regions; nothing for EXPLAIN_FP to explain`,
 and `fp_explanations.csv` may be empty.
 
+## PDF report
+
+With `--explain_fn` or `--explain_fp`, `REPORT_PDF` collects every explanation
+from both agents into `<outdir>/explanations.pdf`:
+
+- a summary page: explanations per sample, and per category the count and mean
+  confidence, separately for false negatives and false positives
+- one section each for false negatives and false positives, grouped by sample and
+  ordered by position. Each entry shows the variant, category, confidence, the
+  explanation and the evidence the agent cited.
+
+The CSVs hold the same content. If no agent produced an explanation (no FNs or
+FPs to explain), no PDF is written. Without either flag `REPORT_PDF` does not run.
+
+The report is rendered by [bin/explanations_pdf.py](bin/explanations_pdf.py)
+with reportlab, installed through the process's `conda` directive (built by Wave
+on Platform). It embeds the DejaVu font, so the Unicode symbols the agents write
+(≥, →, ≈) display in any PDF viewer. With `-profile local`, Wave is off, so the
+launch machine needs `python3` with `reportlab` installed, or run with
+`-with-conda`.
+
 ## Running on Seqera Platform
 
 [platform/pre-run.sh](platform/pre-run.sh) is the head job's pre-run script. It
@@ -420,6 +446,8 @@ main.nf                         entry workflow, params, output block, HappySampl
 modules/variant_truth/main.nf   RUN_HAPPY_REGION typed process
 modules/fn_explain/main.nf      EXTRACT_FN_EVIDENCE process, EXPLAIN_FN agent, FnExplanation record
 modules/fp_explain/main.nf      EXTRACT_FP_EVIDENCE process, EXPLAIN_FP agent, FpExplanation record
+modules/report/main.nf          REPORT_PDF process
+bin/explanations_pdf.py         renders the explanations as explanations.pdf
 nextflow.config                 resources, outputDir, profiles
 nextflow_schema.json            parameter schema
 docs/dag.mmd                    workflow DAG (Mermaid)
