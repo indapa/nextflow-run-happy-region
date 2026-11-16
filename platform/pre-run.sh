@@ -11,6 +11,14 @@
 # Nextflow version required by manifest.nextflowVersion
 export NXF_VER=26.10.6
 
+# Turn off Nextflow secrets. Agent tasks (EXPLAIN_FN / EXPLAIN_FP) run on the
+# local AgentExecutor, not AWS Batch, and Nextflow asks the secrets provider for
+# every non-Batch task's secrets even when it declares none. On AWS Batch the
+# provider is AwsSecretsProvider, which only serves Batch tasks, so agent tasks
+# fail with "AwsSecretsProvider requires the use of the AWS Batch executor".
+# The pipeline uses no Nextflow secrets: the API key comes from the variable below.
+export NXF_ENABLE_SECRETS=false
+
 # Anthropic API key for the EXPLAIN_FN / EXPLAIN_FP agents (--explain_fn, --explain_fp)
 export ANTHROPIC_API_KEY=$(aws secretsmanager get-secret-value \
     --secret-id anthropic-api-key \
