@@ -413,7 +413,7 @@ the head job. The head job has no Docker, so they fail with
 agent {
     runner   = 'pi'
     executor = 'awsbatch'
-    queue    = 'TowerForge-65jW9ftzynV2CSKqbQX8BN-work'
+    queue    = 'TowerForge-***'
     cpus     = 1
     memory   = 2.GB
 }
