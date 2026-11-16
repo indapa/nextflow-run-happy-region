@@ -239,8 +239,11 @@ Requirements and limits:
 - `ANTHROPIC_API_KEY` must be exported in the shell that launches Nextflow.
   On Seqera Platform, see [Running on Seqera Platform](#running-on-seqera-platform).
 - The agent uses the `pi` runner (`agent.runner = 'pi'`), which runs in a
-  container, so Docker is required. The `langchain4j` runner does not support
-  Anthropic models.
+  container. The `langchain4j` runner does not support Anthropic models.
+- Agents get their executor from the `agent` config scope, not from `process`.
+  By default `nextflow.config` runs them on AWS Batch (see
+  [Agents on AWS Batch](#agents-on-aws-batch)). `-profile local` runs them on
+  this machine's Docker.
 - Samples without `query_bam` and `query_bam_index` are skipped.
 - If hap.py finds no false negatives for a sample, `EXPLAIN_FN` does not run
   for it and the run log shows
@@ -361,6 +364,40 @@ compute environment, that is the `TowerForge-…-InstanceRole`:
 
 Batch Forge creates a new role when a compute environment is recreated, so add
 this policy again after that.
+
+### Agents on AWS Batch
+
+Agents do not inherit the `process` scope (see the
+[Nextflow agent docs](https://docs.seqera.io/nextflow/agent#configuration)).
+Platform sets `process.executor` and `process.queue`, but agents never see
+them. Left to the default `local` executor, `EXPLAIN_FN` and `EXPLAIN_FP` run on
+the head job. The head job has no Docker, so they fail with
+`docker: command not found`.
+
+`nextflow.config` therefore sets the agent task directives itself:
+
+```groovy
+agent {
+    runner   = 'pi'
+    executor = 'awsbatch'
+    queue    = 'TowerForge-65jW9ftzynV2CSKqbQX8BN-work'
+    cpus     = 1
+    memory   = 2.GB
+}
+```
+
+- `queue` is the compute queue of the Batch Forge compute environment. Update
+  it if the compute environment is recreated, or when running on another one.
+  `aws batch describe-job-queues` lists the queues. Use the `-work` queue, not
+  `-head`.
+- Each agent task connects back to the head job's RPC broker to make its model
+  call, so compute instances must be able to reach the head job over TCP. The
+  broker uses a random port unless `agent.rpc.port` is set. If the connection
+  fails, check that the compute environment's security group allows traffic
+  between its instances, and set `agent.rpc.remoteHost` to an address of the
+  head job that the compute instances can reach.
+- `-profile local` sets `agent.executor = 'local'`, so local runs keep using
+  Docker on the launch machine.
 
 ## Resources
 
